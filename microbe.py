@@ -1,6 +1,7 @@
 import random
 from config import SCREEN_WIDTH, SCREEN_HEIGHT
 
+
 class Microbe:
     #constructor to intialize attributes
     def __init__(self,id, x, y, size, age, energy, consumed,reproduction_timer):

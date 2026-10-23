@@ -5,6 +5,7 @@ import random
 import pygame
 
 
+
 pygame.init()
 
 simulation_font = pygame.font.SysFont(None, 24)
@@ -23,10 +24,11 @@ REPRODUCTION_TIMER = 50
 #FOOD BLOBS! - Range is amount of blobs
 #Creates a random location for each
 food = []
-for _ in range(15):
+for _ in range(25):
     food.append([
         random.randint(50, SCREEN_WIDTH-50),
         random.randint(50, SCREEN_HEIGHT-50),
+        5,
     ])
 
 running = True
@@ -41,23 +43,17 @@ while running:
 
     #Draws the food blob
     for f in food:
-        pygame.draw.circle(screen, (180,140,60), (int(f[0]), int(f[1])), 4)
-
-    #This is generally for every microbe in microbes
-    
-    hungry = False
+        blob_size = int(f[2])
+        pygame.draw.circle(screen, (0,0,170), (int(f[0]), int(f[1])), blob_size)
 
     for mc in microbes:
-        mc.wander()
+
+        
         # inside the draw section for each microbe
         base_green = 160 + min(int(mc.age * 3), 80)
         color = (40, base_green, 70)
-        pygame.draw.circle(screen, color, (int(mc.x), int(mc.y)), int(mc.size))
-        # soft highlight
-        pygame.draw.circle(screen, (180, 255, 180), (int(mc.x - mc.size*0.3), int(mc.y - mc.size*0.3)), max(1, int(mc.size*0.25)))
-        # thin outline
-        pygame.draw.circle(screen, (20, 100, 40), (int(mc.x), int(mc.y)), int(mc.size), 1)
-    
+        pygame.draw.circle(screen, (20, 100, 40), (int(mc.x), int(mc.y)), int(mc.size))
+        pygame.draw.circle(screen, color, (int(mc.x), int(mc.y)), int(mc.size), 1)
 
         mc.energy -= 0.1
         #nutrient pool drain
@@ -70,8 +66,8 @@ while running:
         population = simulation_font.render(f"Population: {len(microbes)}", True, (0,250,0))
 
         #growth and age every frame
-        if mc.size < 12 and mc.energy > 100:
-            mc.size += GROWTH_RATE
+        if mc.size < 20 and mc.energy > 100:
+            mc.size += GROWTH_RATE 
 
         mc.age += AGING_RATE
 
@@ -87,10 +83,77 @@ while running:
                 reproduction_timer=50
             )
             microbes.append(new_microbe)
-
+            #Reset timer for reproduction
             mc.reproduction_timer = 100
 
+        #Fooood
+        target=None
+        closest_dist=80
+
+        #Finds distance of food using pythagorean theorem 
+        for f in food:
+            dist = ((mc.x - f[0])**2 + (mc.y - f[1])**2)**0.5    
+            if dist < closest_dist:
+                closest_dist = dist
+                target = f
+
+        if target:
+            # direction toward the food blob
+            dx = target[0] - mc.x
+            dy = target[1] - mc.y
+            length = (dx**2 + dy**2)**0.5
+            if length > 0:
+                #Normalize and scale to speed 
+                mc.dx = (dx/length) * 0.2
+                mc.dy = (dy/length) * 0.2
+
+        #delete food blob
+        for f in food[:]:
+            dist = ((mc.x - f[0])**2 + (mc.y - f[1])**2)**0.5 
+            if dist < mc.size:
+                food.remove(f)
+                mc.energy += 20
+                mc.size += 1
+                food.append([
+                        random.randint(50, SCREEN_WIDTH-50),
+                        random.randint(50, SCREEN_HEIGHT-50),
+                        5,
+                    ])
+                break
+
+        else:
+            #if no food is in range
+            mc.wander()
+            if random.random() < 0.05:
+                mc.dx += random.uniform(-0.005, 0.005)
+                mc.dy += random.uniform(-0.005, 0.005)
+
+
+            
         mc.reproduction_timer -= 0.03
+
+    for i in range(len(microbes)):
+            for j in range(i + 1, len(microbes)):
+                a = microbes[i]
+                b = microbes[j]
+                dx = b.x - a.x
+                dy = b.y - a.y
+                dist = (dx*dx + dy*dy)**0.5
+                min_dist = a.size + b.size
+
+                if dist < min_dist and dist > 0:
+                    overlap = min_dist - dist
+                    nx = dx / dist
+                    ny = dy / dist
+                    push = overlap * 0.25          # softness
+                    a.x -= nx * push 
+                    a.y -= ny * push
+                    b.x += nx * push 
+                    b.y += ny * push 
+                    a.squish = 0.8                 # temporary visual flag
+                    b.squish = 0.8
+
+
     #Removes dead microbes from living list
     microbes = [mc for mc in microbes if mc.energy > 0]
 
