@@ -4,8 +4,6 @@ from config import SCREEN_WIDTH, SCREEN_HEIGHT
 import random
 import pygame
 
-
-
 pygame.init()
 
 simulation_font = pygame.font.SysFont(None, 24)
@@ -14,11 +12,11 @@ screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))
 pygame.display.set_caption("Window")
 
 microbes = [
-    Microbe(id=1,x=SCREEN_WIDTH/2,y=SCREEN_HEIGHT/2,size=1,age=0,energy=100,consumed=False,reproduction_timer=50),
-    Microbe(id=2,x=SCREEN_WIDTH/2,y=SCREEN_HEIGHT/2,size=1,age=0,energy=100,consumed=False,reproduction_timer=50),
+    Microbe(id=1,x=SCREEN_WIDTH/2,y=SCREEN_HEIGHT/2,size=1,age=0,energy=400,consumed=False,reproduction_timer=50),
+    Microbe(id=2,x=SCREEN_WIDTH/2,y=SCREEN_HEIGHT/2,size=1,age=0,energy=400,consumed=False,reproduction_timer=50),
 ]
 
-World = Ecosystem(nutrientPool=10000,population=len(microbes))
+World = Ecosystem(nutrientPool=2000,population=len(microbes))
 REPRODUCTION_TIMER = 50
 
 #FOOD BLOBS! - Range is amount of blobs
@@ -30,6 +28,9 @@ for _ in range(25):
         random.randint(50, SCREEN_HEIGHT-50),
         5,
     ])
+
+detritus = []
+
 
 running = True
 while running:
@@ -47,26 +48,29 @@ while running:
         pygame.draw.circle(screen, (0,0,170), (int(f[0]), int(f[1])), blob_size)
 
     for mc in microbes:
-
-        
         # inside the draw section for each microbe
         base_green = 160 + min(int(mc.age * 3), 80)
+        if mc.age < 15:
+            aging_green = mc.age * 5
+        elif mc.age >= 15:
+            aging_green = 99
+
         color = (40, base_green, 70)
-        pygame.draw.circle(screen, (20, 100, 40), (int(mc.x), int(mc.y)), int(mc.size))
+        pygame.draw.circle(screen, (20, 100 - aging_green, 40), (int(mc.x), int(mc.y)), int(mc.size))
         pygame.draw.circle(screen, color, (int(mc.x), int(mc.y)), int(mc.size), 1)
 
         mc.energy -= 0.1
         #nutrient pool drain
         if World.nutrientPool > 0:
-            if mc.energy < 400:
-                World.nutrientPool -= 0.02
-                mc.energy += 0.15
+            #if mc.energy < 400:
+            World.nutrientPool -= 0.02
+            mc.energy += 0.15
  
         #Displays current population
         population = simulation_font.render(f"Population: {len(microbes)}", True, (0,250,0))
 
         #growth and age every frame
-        if mc.size < 20 and mc.energy > 100:
+        if mc.size < 10 and mc.energy > 100:
             mc.size += GROWTH_RATE 
 
         mc.age += AGING_RATE
@@ -78,7 +82,7 @@ while running:
                 x=mc.x + random.uniform(-5,5),
                 y=mc.y + random.uniform(-5,5),
                 size=1,age=0,
-                energy=100,
+                energy=300,
                 consumed=False,
                 reproduction_timer=50
             )
@@ -112,26 +116,42 @@ while running:
             dist = ((mc.x - f[0])**2 + (mc.y - f[1])**2)**0.5 
             if dist < mc.size:
                 food.remove(f)
-                mc.energy += 20
-                mc.size += 1
+                mc.energy += 50
+                #caps size at 20
+                if mc.size < 20:
+                    mc.size += 1
                 food.append([
                         random.randint(50, SCREEN_WIDTH-50),
                         random.randint(50, SCREEN_HEIGHT-50),
                         5,
                     ])
                 break
-
         else:
             #if no food is in range
             mc.wander()
             if random.random() < 0.05:
                 mc.dx += random.uniform(-0.005, 0.005)
                 mc.dy += random.uniform(-0.005, 0.005)
-
-
             
         mc.reproduction_timer -= 0.03
 
+        #death and creation of detritus
+        #To be continued
+        for m in microbes:
+            if mc.age > 50:
+                #detritus.append([mc.x, mc.y,])
+                microbes.remove(m)
+                break
+
+        #for _ in detritus[:]:
+        # if detritus:
+        #     pygame.draw.circle(screen, (90, 0, 0), (detritus[0], detritus[1]), mc.size)
+
+
+
+
+
+    #END OF MC LOOP ----------------
     for i in range(len(microbes)):
             for j in range(i + 1, len(microbes)):
                 a = microbes[i]
@@ -156,8 +176,6 @@ while running:
 
     #Removes dead microbes from living list
     microbes = [mc for mc in microbes if mc.energy > 0]
-
-
 
     #Displays nutrient pool
     nutrient_text = simulation_font.render(f"Nutrients: {World.nutrientPool:.2f}", True, (0,250,0))
