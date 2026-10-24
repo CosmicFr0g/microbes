@@ -1,4 +1,5 @@
 import random
+import pygame
 from config import SCREEN_WIDTH, SCREEN_HEIGHT
 
 
@@ -39,3 +40,36 @@ class Microbe:
             self.dx *= -1
         if self.y < self.size or self.y > SCREEN_HEIGHT - self.size:
             self.dy *= -1
+
+    def draw_microbe(self,screen, mc):
+        base_green = 160 + min(int(mc.age * 3), 80)
+        if mc.age < 15:
+            aging_green = mc.age * 5
+        elif mc.age >= 15:
+            aging_green = 99
+        color = (40, base_green, 70)
+        pygame.draw.circle(screen, (20, 100 - aging_green, 40), (int(mc.x), int(mc.y)), int(mc.size))
+        pygame.draw.circle(screen, color, (int(mc.x), int(mc.y)), int(mc.size), 1)
+
+    def separate(microbes):
+        for i in range(len(microbes)):
+                    for j in range(i + 1, len(microbes)):
+                        a = microbes[i]
+                        b = microbes[j]
+                        dx = b.x - a.x
+                        dy = b.y - a.y
+                        dist = (dx*dx + dy*dy)**0.5
+                        min_dist = a.size + b.size
+        
+                        if dist < min_dist and dist > 0:
+                            overlap = min_dist - dist
+                            nx = dx / dist
+                            ny = dy / dist
+                            push = overlap * 0.25          # softness
+                            a.x -= nx * push 
+                            a.y -= ny * push
+                            b.x += nx * push 
+                            b.y += ny * push 
+                            a.squish = 0.8                 # temporary visual flag
+                            b.squish = 0.8
+        

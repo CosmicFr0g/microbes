@@ -19,8 +19,6 @@ microbes = [
 World = Ecosystem(nutrientPool=2000,population=len(microbes))
 REPRODUCTION_TIMER = 50
 
-#FOOD BLOBS! - Range is amount of blobs
-#Creates a random location for each
 food = []
 for _ in range(25):
     food.append([
@@ -30,7 +28,6 @@ for _ in range(25):
     ])
 
 detritus = []
-
 
 running = True
 while running:
@@ -42,23 +39,16 @@ while running:
     GROWTH_RATE = 0.001
     AGING_RATE = 0.001
 
-    #Draws the food blob
+    # DRAW FOOD BLOBS
     for f in food:
         blob_size = int(f[2])
         pygame.draw.circle(screen, (0,0,170), (int(f[0]), int(f[1])), blob_size)
 
     for mc in microbes:
-        # inside the draw section for each microbe
-        base_green = 160 + min(int(mc.age * 3), 80)
-        if mc.age < 15:
-            aging_green = mc.age * 5
-        elif mc.age >= 15:
-            aging_green = 99
+        # DRAW MICROBES
+        mc.draw_microbe(screen,mc)
 
-        color = (40, base_green, 70)
-        pygame.draw.circle(screen, (20, 100 - aging_green, 40), (int(mc.x), int(mc.y)), int(mc.size))
-        pygame.draw.circle(screen, color, (int(mc.x), int(mc.y)), int(mc.size), 1)
-
+        #deplete energy of microbe every tick
         mc.energy -= 0.1
         #nutrient pool drain
         if World.nutrientPool > 0:
@@ -134,45 +124,27 @@ while running:
                 mc.dy += random.uniform(-0.005, 0.005)
             
         mc.reproduction_timer -= 0.03
+    #-------------------END OF MC LOOP ---------------------#  
+        
 
-        #death and creation of detritus
-        #To be continued
-        for m in microbes:
-            if mc.age > 50:
-                #detritus.append([mc.x, mc.y,])
-                microbes.remove(m)
-                break
+        
+    #death and creation of detritus
+    #To be continued
+    for mc in microbes:
+        if mc.age > 50:
+            #detritus.append([mc.x, mc.y,])
+            microbes.remove(mc)
+            break
 
+        #This boy ain't right 
         #for _ in detritus[:]:
-        # if detritus:
-        #     pygame.draw.circle(screen, (90, 0, 0), (detritus[0], detritus[1]), mc.size)
+                # if detritus:
+                #     pygame.draw.circle(screen, (90, 0, 0), (detritus[0], detritus[1]), mc.size)
 
+# <-----this is while running main loop still
 
-
-
-
-    #END OF MC LOOP ----------------
-    for i in range(len(microbes)):
-            for j in range(i + 1, len(microbes)):
-                a = microbes[i]
-                b = microbes[j]
-                dx = b.x - a.x
-                dy = b.y - a.y
-                dist = (dx*dx + dy*dy)**0.5
-                min_dist = a.size + b.size
-
-                if dist < min_dist and dist > 0:
-                    overlap = min_dist - dist
-                    nx = dx / dist
-                    ny = dy / dist
-                    push = overlap * 0.25          # softness
-                    a.x -= nx * push 
-                    a.y -= ny * push
-                    b.x += nx * push 
-                    b.y += ny * push 
-                    a.squish = 0.8                 # temporary visual flag
-                    b.squish = 0.8
-
+    # KEEPS MICROBES FROM OVERLAPPING 
+    Microbe.separate(microbes)
 
     #Removes dead microbes from living list
     microbes = [mc for mc in microbes if mc.energy > 0]
